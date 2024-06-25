@@ -1,12 +1,23 @@
-
 <x-layout>
-    <x-slot:heading>
+    <x-slot name="heading">
         Map Page
-    </x-slot:heading>
-    <h1>Map Page Content</h1>
+    </x-slot>
 
-    <x-maps-leaflet :centerPoint="['lat' => 46.45, 'long' => -63.30]" :zoomLevel="9.5" ></x-maps-leaflet>
-{{--            <x-maps-marker :centerPoint="['lat' => 46.45, 'long' => -63.30]" :popup="'<b>Charlottetown</b>'"></x-maps-marker>--}}
-{{--        <x-maps-marker :centerPoint="['lat' => 46.25, 'long' => -63.13]" :popup="'<b>Summerside</b>'"></x-maps-marker>--}}
+    @php $markerCoordinates = []; @endphp
+    @foreach($geoJsonData['features'] as $feature)
+        @php
+            $jobNumber = $feature['properties']['jobNumber'];
+            $client = $feature['properties']['client'];
+            $location = $feature['properties']['location'];
+            $pid = $feature['properties']['pid'];
+            $lat = $feature['properties']['latitude'];
+            $long = $feature['properties']['longitude'];
+
+            // Add marker coordinates to the array
+            $markerCoordinates[] = ['lat' => $long, 'long' => $lat];
+        @endphp
+    @endforeach
+
+    <x-maps-leaflet :centerPoint="['lat' =>46.45, 'long' => -63.30]" :zoomLevel="9.5"
+                    :markers="$markerCoordinates"></x-maps-leaflet>
 </x-layout>
-
