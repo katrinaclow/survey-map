@@ -13,21 +13,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"/>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
     <style>
         #map {
             width: 100%;
             height: 600px;
-        }
-
-        #yearSelector {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            background: white;
-            padding: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-            border-radius: 5px;
         }
     </style>
 </head>
@@ -36,13 +26,8 @@
 
 <script>
     // Initialize the map and set its view to your desired location
-    var map = L.map('map').setView([46.45, -63.30], 9); // Example: Ottawa coordinates
+    var map = L.map('map').setView([46.45, -63.30], 9); // Example: coordinates for your map
 
-    // Initialize control layers for map toggling
-    var controlLayers = L.control.layers(null, null, {position: "topright", collapsed: false}).addTo(map);
-
-    const yearLayers = {};
-    let selectedYear = 'all';  // Track the selected year
     // Define base map layers
     const baseMaps = {
         "Basic": L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -60,10 +45,13 @@
         }),
     };
 
-    // Add the base maps to the control
-    Object.entries(baseMaps).forEach(([name, layer]) => {
-        controlLayers.addBaseLayer(layer, name);
-    });
+    // Unified control layer object for both years and overlays
+    const overlayLayers = {};  // This will contain year layers and other overlays
+
+    // Create layer groups for year layers and other overlays
+    const yearLayers = {};  // To store year layers
+    const completedLayer = L.layerGroup();  // "Completed Jobs" layer group
+    const monumentsLayer = L.layerGroup();  // "Monuments" layer group
 
     // Define custom completed icon
     const completedIcon = L.icon({
@@ -87,17 +75,15 @@
   `;
     }
 
+    // Function to check completion status (case-insensitive match)
     function checkStatus(status) {
         return ["yes", "y", "na"].includes((status || "").toLowerCase());
     }
 
+    // Fetch and process GeoJSON data for year layers and completed jobs
     fetch("/static/job_data.geojson")
         .then(response => response.json())
         .then(data => {
-            const yearClusterGroups = {};  // Object to hold cluster groups by year
-            const completedLayer = L.layerGroup();  // Completed jobs layer (off by default)
-
-            // Process each feature in the GeoJSON data
             L.geoJSON(data, {
                 pointToLayer: (feature, latlng) => {
                     let marker;
@@ -121,20 +107,24 @@
                     const year = new Date(feature.properties.date_created).getFullYear();
 
                     // Create a marker cluster group for each year if it doesn't exist
-                    if (!yearClusterGroups[year]) {
-                        yearClusterGroups[year] = L.markerClusterGroup();  // Initialize marker cluster group for the year
+                    if (!yearLayers[year]) {
+                        yearLayers[year] = L.markerClusterGroup({
+                            maxClusterRadius: 50  // Adjust this value to control when clusters break apart
+                        });
+                        map.addLayer(yearLayers[year]);  // Show year layers by default
+                        overlayLayers[`Jobs from ${year}`] = yearLayers[year];  // Add year layers to the unified overlay control
                     }
 
+
                     // Add marker to the corresponding year's cluster group
-                    yearClusterGroups[year].addLayer(marker);
+                    yearLayers[year].addLayer(marker);
 
                     return marker;
                 }
             });
 
-            // Add each year's marker cluster group to the map and the control layers
-            Object.entries(yearClusterGroups).forEach(([year, clusterGroup]) => {
-                map.addLayer(clusterGroup);
+            // Add each year's marker cluster group to the control layers
+            Object.entries(yearLayers).forEach(([year, clusterGroup]) => {
                 controlLayers.addOverlay(clusterGroup, ` ${year}`);
             });
 
@@ -148,8 +138,6 @@
     fetch("/static/pei_control_monuments.geojson")
         .then(response => response.json())
         .then(data => {
-            const monumentsLayer = L.layerGroup();
-
             L.geoJSON(data, {
                 pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
                     radius: 4,
@@ -161,12 +149,20 @@
                 }),
             }).addTo(monumentsLayer);
 
+            // Add monuments layer to the control
             controlLayers.addOverlay(monumentsLayer, "Monuments");
         })
         .catch(error => console.error("Error loading monument data:", error));
 
-    // Function to check completion status (case-insensitive match)
+    // Add "Monuments" and "Completed Jobs" to overlay layers
+    {#overlayLayers["Completed Jobs"] = completedLayer;#}
+    {#overlayLayers["Monuments"] = monumentsLayer;#}
 
+    // Create a unified layer control for all overlays (years + other layers)
+    const controlLayers = L.control.layers(baseMaps, overlayLayers, {
+        position: 'topright',
+        collapsed: false
+    }).addTo(map);
 
 </script>
 </body>
