@@ -8,18 +8,41 @@
     <!-- Load Leaflet CSS and JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <!-- Load Leaflet.markercluster CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"/>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <style>
+        #map {
+            width: 100%;
+            height: 600px;
+        }
+
+        #yearSelector {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-<div id="map" style="width: 100%; height: 600px;"></div>
+<div id="map"></div>
 
 <script>
     // Initialize the map and set its view to your desired location
     var map = L.map('map').setView([46.45, -63.30], 9); // Example: Ottawa coordinates
 
-
     // Initialize control layers for map toggling
     var controlLayers = L.control.layers(null, null, {position: "topright", collapsed: false}).addTo(map);
 
+    const yearLayers = {};
+    let selectedYear = 'all';  // Track the selected year
     // Define base map layers
     const baseMaps = {
         "Basic": L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -42,47 +65,13 @@
         controlLayers.addBaseLayer(layer, name);
     });
 
-    // Define custom icons for different statuses
-    // Define custom icons for different statuses
-const icons = {
-    default: L.icon({
-        iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-        iconSize: [20, 32],  // Smaller size
-        iconAnchor: [10, 32],  // Adjust anchor to keep the pin tip in place
-        popupAnchor: [0, -32]  // Adjust popup to open above the marker
-    }),
-    fieldwork: L.icon({
-        iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
-        iconSize: [20, 32],  // Smaller size
-        iconAnchor: [10, 32],
-        popupAnchor: [0, -32]
-    }),
-    survey: L.icon({
-        iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
-        iconSize: [20, 32],  // Smaller size
-        iconAnchor: [10, 32],
-        popupAnchor: [0, -32]
-    }),
-    completed: L.icon({
+    // Define custom completed icon
+    const completedIcon = L.icon({
         iconUrl: "https://clipart-library.com/images_k/red-check-mark-transparent-background/red-check-mark-transparent-background-22.png",
-        iconSize: [20, 20],  // Smaller size for completed marker
+        iconSize: [20, 16],  // Smaller size for completed marker
         iconAnchor: [8, 8],  // Center the smaller icon
         popupAnchor: [0, -8]
-    }),
-};
-
-    // Function to select the appropriate icon based on job status
-    function getJobIcon(properties) {
-        if (checkStatus(properties.final_plan_submitted)) return icons.completed;
-        if (checkStatus(properties.survey_markers_set)) return icons.survey;
-        if (checkStatus(properties.initial_fieldwork_completed)) return icons.fieldwork;
-        return icons.default;
-    }
-
-    // Function to check completion status (case-insensitive match)
-    function checkStatus(status) {
-        return ["yes", "y", "na"].includes((status || "").toLowerCase());
-    }
+    });
 
     // Function to generate popup content for a job marker
     function createPopupContent(properties) {
@@ -98,47 +87,62 @@ const icons = {
   `;
     }
 
-    // Fetch the GeoJSON data and process it
+    function checkStatus(status) {
+        return ["yes", "y", "na"].includes((status || "").toLowerCase());
+    }
 
     fetch("/static/job_data.geojson")
         .then(response => response.json())
         .then(data => {
-            const yearLayers = {};
-            const completedLayer = L.layerGroup().addTo(map);
+            const yearClusterGroups = {};  // Object to hold cluster groups by year
+            const completedLayer = L.layerGroup();  // Completed jobs layer (off by default)
 
             // Process each feature in the GeoJSON data
             L.geoJSON(data, {
                 pointToLayer: (feature, latlng) => {
-                    const icon = getJobIcon(feature.properties);
-                    const marker = L.marker(latlng, {icon}).bindPopup(createPopupContent(feature.properties));
+                    let marker;
+                    // Check if the job is completed and use the custom icon
+                    if (checkStatus(feature.properties.final_plan_submitted)) {
+                        marker = L.marker(latlng, {icon: completedIcon}).bindPopup(createPopupContent(feature.properties));
+                        completedLayer.addLayer(marker);  // Add completed marker to the completed layer
+                    } else {
+                        // Create a simple red circle marker for non-completed jobs
+                        marker = L.circleMarker(latlng, {
+                            radius: 8,
+                            fillColor: "#ff0000",
+                            color: "#000",
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        }).bindPopup(createPopupContent(feature.properties));
+                    }
 
                     // Extract the year from the date_created property
                     const year = new Date(feature.properties.date_created).getFullYear();
 
-                    // Create a layer group for each year if it doesn't already exist
-                    if (!yearLayers[year]) yearLayers[year] = L.layerGroup().addTo(map);
-
-                    // Add the marker to the appropriate year layer
-                    marker.addTo(yearLayers[year]);
-
-                    // Also add to completed layer if the job is complete
-                    if (checkStatus(feature.properties.final_plan_submitted)) {
-                        marker.addTo(completedLayer);
+                    // Create a marker cluster group for each year if it doesn't exist
+                    if (!yearClusterGroups[year]) {
+                        yearClusterGroups[year] = L.markerClusterGroup();  // Initialize marker cluster group for the year
                     }
+
+                    // Add marker to the corresponding year's cluster group
+                    yearClusterGroups[year].addLayer(marker);
 
                     return marker;
                 }
             });
 
-            // Add year layers to the control for toggling
-            Object.entries(yearLayers).forEach(([year, layer]) => {
-                controlLayers.addOverlay(layer, `${year}`);
+            // Add each year's marker cluster group to the map and the control layers
+            Object.entries(yearClusterGroups).forEach(([year, clusterGroup]) => {
+                map.addLayer(clusterGroup);
+                controlLayers.addOverlay(clusterGroup, ` ${year}`);
             });
 
-            // Add completed jobs layer to the control
+            // Add completed jobs layer to the control, but keep it off by default
             controlLayers.addOverlay(completedLayer, "Completed Jobs");
         })
         .catch(error => console.error("Error loading job data:", error));
+
 
     // Fetch and display monument data
     fetch("/static/pei_control_monuments.geojson")
@@ -160,6 +164,9 @@ const icons = {
             controlLayers.addOverlay(monumentsLayer, "Monuments");
         })
         .catch(error => console.error("Error loading monument data:", error));
+
+    // Function to check completion status (case-insensitive match)
+
 
 </script>
 </body>

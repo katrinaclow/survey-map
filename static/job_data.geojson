@@ -3566,26 +3566,6 @@
             "geometry": {
                 "type": "Point",
                 "coordinates": [
-                    -63.724,
-                    46.42
-                ]
-            },
-            "properties": {
-                "job_number": 23181,
-                "client": "Strategic Enterprises",
-                "address": " , Travellers Rest",
-                "pid": 1079995,
-                "date_created": "",
-                "initial_fieldwork_completed": "",
-                "survey_markers_set": "",
-                "final_plan_submitted": ""
-            }
-        },
-        {
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
                     -64.024,
                     46.605
                 ]
@@ -4475,7 +4455,7 @@
                 "client": "Ron Gillis",
                 "address": " Route 2, Woodstock",
                 "pid": 1160886,
-                "date_created": "Juy 27, 2023",
+                "date_created": "July 27, 2023",
                 "initial_fieldwork_completed": "",
                 "survey_markers_set": "",
                 "final_plan_submitted": ""
@@ -9855,7 +9835,7 @@
                 "client": "Graham Layton",
                 "address": "206 Riverview Dr., Fortune Cove",
                 "pid": 34736,
-                "date_created": "Arpil 24, 2024",
+                "date_created": "April 24, 2024",
                 "initial_fieldwork_completed": "",
                 "survey_markers_set": "",
                 "final_plan_submitted": ""
