@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Job Map</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Load Leaflet CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+</head>
+<body>
+<div id="map" style="width: 100%; height: 600px;"></div>
+
+<script>
+    // Initialize the map and set its view to your desired location
+    var map = L.map('map').setView([46.45, -63.30], 9); // Example: Ottawa coordinates
+
+
+    // Initialize control layers for map toggling
+    var controlLayers = L.control.layers(null, null, {position: "topright", collapsed: false}).addTo(map);
+
+    // Define base map layers
+    const baseMaps = {
+        "Basic": L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 18,
+            attribution: '&copy; OpenStreetMap contributors',
+        }).addTo(map),
+
+        "Topographical": L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+            maxZoom: 18,
+            attribution: 'Map data &copy; OpenStreetMap contributors, SRTM | Style: OpenTopoMap',
+        }),
+
+        "Satellite": L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+            attribution: "Tiles &copy; Esri",
+        }),
+    };
+
+    // Add the base maps to the control
+    Object.entries(baseMaps).forEach(([name, layer]) => {
+        controlLayers.addBaseLayer(layer, name);
+    });
+
+    // Define custom icons for different statuses
+    // Define custom icons for different statuses
+const icons = {
+    default: L.icon({
+        iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+        iconSize: [20, 32],  // Smaller size
+        iconAnchor: [10, 32],  // Adjust anchor to keep the pin tip in place
+        popupAnchor: [0, -32]  // Adjust popup to open above the marker
+    }),
+    fieldwork: L.icon({
+        iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
+        iconSize: [20, 32],  // Smaller size
+        iconAnchor: [10, 32],
+        popupAnchor: [0, -32]
+    }),
+    survey: L.icon({
+        iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
+        iconSize: [20, 32],  // Smaller size
+        iconAnchor: [10, 32],
+        popupAnchor: [0, -32]
+    }),
+    completed: L.icon({
+        iconUrl: "https://clipart-library.com/images_k/red-check-mark-transparent-background/red-check-mark-transparent-background-22.png",
+        iconSize: [20, 20],  // Smaller size for completed marker
+        iconAnchor: [8, 8],  // Center the smaller icon
+        popupAnchor: [0, -8]
+    }),
+};
+
+    // Function to select the appropriate icon based on job status
+    function getJobIcon(properties) {
+        if (checkStatus(properties.final_plan_submitted)) return icons.completed;
+        if (checkStatus(properties.survey_markers_set)) return icons.survey;
+        if (checkStatus(properties.initial_fieldwork_completed)) return icons.fieldwork;
+        return icons.default;
+    }
+
+    // Function to check completion status (case-insensitive match)
+    function checkStatus(status) {
+        return ["yes", "y", "na"].includes((status || "").toLowerCase());
+    }
+
+    // Function to generate popup content for a job marker
+    function createPopupContent(properties) {
+        return `
+    <h1> ${properties.job_number}</h1>
+    <p><strong>Client:</strong> ${properties.client}</p>
+    <p><strong>Address:</strong> ${properties.address}</p>
+    <p><strong>PID:</strong> ${properties.pid}</p>
+    <p><strong>Fieldwork Completed:</strong> ${properties.initial_fieldwork_completed || "N/A"}</p>
+    <p><strong>Survey Markers Set:</strong> ${properties.survey_markers_set || "N/A"}</p>
+    <p><strong>Final Plan Submitted:</strong> ${properties.final_plan_submitted || "N/A"}</p>
+    <p><strong>Date Created:</strong> ${properties.date_created}</p>
+  `;
+    }
+
+    // Fetch the GeoJSON data and process it
+
+    fetch("/static/job_data.geojson")
+        .then(response => response.json())
+        .then(data => {
+            const yearLayers = {};
+            const completedLayer = L.layerGroup().addTo(map);
+
+            // Process each feature in the GeoJSON data
+            L.geoJSON(data, {
+                pointToLayer: (feature, latlng) => {
+                    const icon = getJobIcon(feature.properties);
+                    const marker = L.marker(latlng, {icon}).bindPopup(createPopupContent(feature.properties));
+
+                    // Extract the year from the date_created property
+                    const year = new Date(feature.properties.date_created).getFullYear();
+
+                    // Create a layer group for each year if it doesn't already exist
+                    if (!yearLayers[year]) yearLayers[year] = L.layerGroup().addTo(map);
+
+                    // Add the marker to the appropriate year layer
+                    marker.addTo(yearLayers[year]);
+
+                    // Also add to completed layer if the job is complete
+                    if (checkStatus(feature.properties.final_plan_submitted)) {
+                        marker.addTo(completedLayer);
+                    }
+
+                    return marker;
+                }
+            });
+
+            // Add year layers to the control for toggling
+            Object.entries(yearLayers).forEach(([year, layer]) => {
+                controlLayers.addOverlay(layer, `${year}`);
+            });
+
+            // Add completed jobs layer to the control
+            controlLayers.addOverlay(completedLayer, "Completed Jobs");
+        })
+        .catch(error => console.error("Error loading job data:", error));
+
+    // Fetch and display monument data
+    fetch("/static/pei_control_monuments.geojson")
+        .then(response => response.json())
+        .then(data => {
+            const monumentsLayer = L.layerGroup();
+
+            L.geoJSON(data, {
+                pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+                    radius: 4,
+                    fillColor: "#00bfff",
+                    color: "#000",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8,
+                }),
+            }).addTo(monumentsLayer);
+
+            controlLayers.addOverlay(monumentsLayer, "Monuments");
+        })
+        .catch(error => console.error("Error loading monument data:", error));
+
+</script>
+</body>
+</html>
