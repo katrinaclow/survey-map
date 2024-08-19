@@ -109,7 +109,8 @@
                     // Create a marker cluster group for each year if it doesn't exist
                     if (!yearLayers[year]) {
                         yearLayers[year] = L.markerClusterGroup({
-                            maxClusterRadius: 50  // Adjust this value to control when clusters break apart
+                            maxClusterRadius: 40,  // Adjust this value to control when clusters break apart
+                            disableClusteringAtZoom: 40
                         });
                         map.addLayer(yearLayers[year]);  // Show year layers by default
                         overlayLayers[`Jobs from ${year}`] = yearLayers[year];  // Add year layers to the unified overlay control
@@ -154,16 +155,13 @@
         })
         .catch(error => console.error("Error loading monument data:", error));
 
-    // Add "Monuments" and "Completed Jobs" to overlay layers
-    {#overlayLayers["Completed Jobs"] = completedLayer;#}
-    {#overlayLayers["Monuments"] = monumentsLayer;#}
-
     // Create a unified layer control for all overlays (years + other layers)
     const controlLayers = L.control.layers(baseMaps, overlayLayers, {
         position: 'topright',
         collapsed: false
     }).addTo(map);
 
+    {#TODO: fix completed jobs layering and toggle options#}
 </script>
 </body>
 </html>
