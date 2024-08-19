@@ -14,6 +14,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"/>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
+    <!-- Include Leaflet Search Plugin -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-search/dist/leaflet-search.min.css">
+    <script src="https://unpkg.com/leaflet-search/dist/leaflet-search.min.js"></script>
+
+
     <style>
         #map {
             width: 100%;
@@ -24,144 +29,7 @@
 <body>
 <div id="map"></div>
 
-<script>
-    // Initialize the map and set its view to your desired location
-    var map = L.map('map').setView([46.45, -63.30], 9); // Example: coordinates for your map
-
-    // Define base map layers
-    const baseMaps = {
-        "Basic": L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 18,
-            attribution: '&copy; OpenStreetMap contributors',
-        }).addTo(map),
-
-        "Topographical": L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
-            maxZoom: 18,
-            attribution: 'Map data &copy; OpenStreetMap contributors, SRTM | Style: OpenTopoMap',
-        }),
-
-        "Satellite": L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-            attribution: "Tiles &copy; Esri",
-        }),
-    };
-
-    // Unified control layer object for both years and overlays
-    const overlayLayers = {};  // This will contain year layers and other overlays
-
-    // Create layer groups for year layers and other overlays
-    const yearLayers = {};  // To store year layers
-    const completedLayer = L.layerGroup();  // "Completed Jobs" layer group
-    const monumentsLayer = L.layerGroup();  // "Monuments" layer group
-
-    // Define custom completed icon
-    const completedIcon = L.icon({
-        iconUrl: "https://clipart-library.com/images_k/red-check-mark-transparent-background/red-check-mark-transparent-background-22.png",
-        iconSize: [20, 16],  // Smaller size for completed marker
-        iconAnchor: [8, 8],  // Center the smaller icon
-        popupAnchor: [0, -8]
-    });
-
-    // Function to generate popup content for a job marker
-    function createPopupContent(properties) {
-        return `
-    <h1> ${properties.job_number}</h1>
-    <p><strong>Client:</strong> ${properties.client}</p>
-    <p><strong>Address:</strong> ${properties.address}</p>
-    <p><strong>PID:</strong> ${properties.pid}</p>
-    <p><strong>Fieldwork Completed:</strong> ${properties.initial_fieldwork_completed || "N/A"}</p>
-    <p><strong>Survey Markers Set:</strong> ${properties.survey_markers_set || "N/A"}</p>
-    <p><strong>Final Plan Submitted:</strong> ${properties.final_plan_submitted || "N/A"}</p>
-    <p><strong>Date Created:</strong> ${properties.date_created}</p>
-  `;
-    }
-
-    // Function to check completion status (case-insensitive match)
-    function checkStatus(status) {
-        return ["yes", "y", "na"].includes((status || "").toLowerCase());
-    }
-
-    // Fetch and process GeoJSON data for year layers and completed jobs
-    fetch("/static/job_data.geojson")
-        .then(response => response.json())
-        .then(data => {
-            L.geoJSON(data, {
-                pointToLayer: (feature, latlng) => {
-                    let marker;
-                    // Check if the job is completed and use the custom icon
-                    if (checkStatus(feature.properties.final_plan_submitted)) {
-                        marker = L.marker(latlng, {icon: completedIcon}).bindPopup(createPopupContent(feature.properties));
-                        completedLayer.addLayer(marker);  // Add completed marker to the completed layer
-                    } else {
-                        // Create a simple red circle marker for non-completed jobs
-                        marker = L.circleMarker(latlng, {
-                            radius: 8,
-                            fillColor: "#ff0000",
-                            color: "#000",
-                            weight: 1,
-                            opacity: 1,
-                            fillOpacity: 0.8
-                        }).bindPopup(createPopupContent(feature.properties));
-                    }
-
-                    // Extract the year from the date_created property
-                    const year = new Date(feature.properties.date_created).getFullYear();
-
-                    // Create a marker cluster group for each year if it doesn't exist
-                    if (!yearLayers[year]) {
-                        yearLayers[year] = L.markerClusterGroup({
-                            maxClusterRadius: 40,  // Adjust this value to control when clusters break apart
-                            disableClusteringAtZoom: 40
-                        });
-                        map.addLayer(yearLayers[year]);  // Show year layers by default
-                        overlayLayers[`Jobs from ${year}`] = yearLayers[year];  // Add year layers to the unified overlay control
-                    }
-
-
-                    // Add marker to the corresponding year's cluster group
-                    yearLayers[year].addLayer(marker);
-
-                    return marker;
-                }
-            });
-
-            // Add each year's marker cluster group to the control layers
-            Object.entries(yearLayers).forEach(([year, clusterGroup]) => {
-                controlLayers.addOverlay(clusterGroup, ` ${year}`);
-            });
-
-            // Add completed jobs layer to the control, but keep it off by default
-            controlLayers.addOverlay(completedLayer, "Completed Jobs");
-        })
-        .catch(error => console.error("Error loading job data:", error));
-
-
-    // Fetch and display monument data
-    fetch("/static/pei_control_monuments.geojson")
-        .then(response => response.json())
-        .then(data => {
-            L.geoJSON(data, {
-                pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
-                    radius: 4,
-                    fillColor: "#00bfff",
-                    color: "#000",
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8,
-                }),
-            }).addTo(monumentsLayer);
-
-            // Add monuments layer to the control
-            controlLayers.addOverlay(monumentsLayer, "Monuments");
-        })
-        .catch(error => console.error("Error loading monument data:", error));
-
-    // Create a unified layer control for all overlays (years + other layers)
-    const controlLayers = L.control.layers(baseMaps, overlayLayers, {
-        position: 'topright',
-        collapsed: false
-    }).addTo(map);
-
-    {#TODO: fix completed jobs layering and toggle options#}
-</script>
+<!-- Link to the external JavaScript file -->
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
 </body>
 </html>
