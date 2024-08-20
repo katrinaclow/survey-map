@@ -5,20 +5,13 @@ const initializeMap = () => {
 
 const map = initializeMap();
 
-// Define base map layers
+// Add ArcGIS Basemap instead of OpenStreetMap
 const baseLayers = {
-    "Basic": L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 18,
-        attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map),
-    "Topographical": L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
-        maxZoom: 18,
-        attribution: 'Map data &copy; OpenStreetMap contributors, SRTM | Style: OpenTopoMap',
-    }),
-    "Satellite": L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-        attribution: "Tiles &copy; Esri",
-    }),
+    "ArcGIS Topographic": L.esri.basemapLayer("Topographic").addTo(map), // ArcGIS Topographic Basemap
+    "ArcGIS Satellite": L.esri.basemapLayer("Imagery"), // ArcGIS Satellite Basemap
+    "ArcGIS Streets": L.esri.basemapLayer("Streets") // ArcGIS Streets Basemap
 };
+
 
 const controlLayers = L.control.layers(baseLayers, {}, {
     position: 'topright',
@@ -27,8 +20,8 @@ const controlLayers = L.control.layers(baseLayers, {}, {
 
 // Layer groups for each year and completed jobs
 const yearLayers = {};
-const completedJobsLayer = L.layerGroup(); // Completed jobs layer group
-const markers = []; // Array to hold markers for search functionality
+const completedJobsLayer = L.layerGroup();
+const markers = [];
 
 // Define custom completed icon
 const createCompletedIcon = () => {
@@ -45,15 +38,15 @@ const completedIcon = createCompletedIcon();
 // Function to generate popup content for a job marker
 const generatePopupContent = (properties) => {
     return `
-            <h1>${properties.job_number}</h1>
-            <p><strong>Client:</strong> ${properties.client}</p>
-            <p><strong>Address:</strong> ${properties.address}</p>
-            <p><strong>PID:</strong> ${properties.pid}</p>
-            <p><strong>Fieldwork Completed:</strong> ${properties.initial_fieldwork_completed || "N/A"}</p>
-            <p><strong>Survey Markers Set:</strong> ${properties.survey_markers_set || "N/A"}</p>
-            <p><strong>Final Plan Submitted:</strong> ${properties.final_plan_submitted || "N/A"}</p>
-            <p><strong>Date Created:</strong> ${properties.date_created}</p>
-        `;
+        <h1>${properties.job_number}</h1>
+        <p><strong>Client:</strong> ${properties.client}</p>
+        <p><strong>Address:</strong> ${properties.address}</p>
+        <p><strong>PID:</strong> ${properties.pid}</p>
+        <p><strong>Fieldwork Completed:</strong> ${properties.initial_fieldwork_completed || "N/A"}</p>
+        <p><strong>Survey Markers Set:</strong> ${properties.survey_markers_set || "N/A"}</p>
+        <p><strong>Final Plan Submitted:</strong> ${properties.final_plan_submitted || "N/A"}</p>
+        <p><strong>Date Created:</strong> ${properties.date_created}</p>
+    `;
 };
 
 // Function to check completion status
@@ -65,10 +58,9 @@ const isJobCompleted = (status) => {
 const addMarkerToLayer = (feature, latlng) => {
     let marker;
 
-    // Check if the job is completed and use the custom icon
     if (isJobCompleted(feature.properties.final_plan_submitted)) {
         marker = L.marker(latlng, {icon: completedIcon}).bindPopup(generatePopupContent(feature.properties));
-        completedJobsLayer.addLayer(marker);  // Add to completed jobs layer
+        completedJobsLayer.addLayer(marker);
     } else {
         marker = L.circleMarker(latlng, {
             radius: 8,
@@ -86,65 +78,46 @@ const addMarkerToLayer = (feature, latlng) => {
                 maxClusterRadius: 40,
                 disableClusteringAtZoom: 40
             });
-            controlLayers.addOverlay(yearLayers[jobYear], `Jobs from ${jobYear}`);
+            controlLayers.addOverlay(yearLayers[jobYear], ` ${jobYear}`);
         }
 
         yearLayers[jobYear].addLayer(marker);
     }
 
-    // Add marker to search index
-    markers.push({
-        marker: marker,
-        properties: feature.properties
-    });
-
+    markers.push({marker, properties: feature.properties});
     return marker;
 };
 
 // Function to load GeoJSON data
 const loadGeoJsonData = () => {
     fetch("/static/job_data.geojson")
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Failed to fetch GeoJSON: ${response.status} ${response.statusText}`);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
             L.geoJSON(data, {
                 pointToLayer: addMarkerToLayer
             });
+
             controlLayers.addOverlay(completedJobsLayer, "Completed Jobs");
-
-
-            // Initialize Leaflet Search Control to search across all layers
             const searchControl = new L.Control.Search({
-                layer: L.featureGroup([completedJobsLayer, ...Object.values(yearLayers)]),  // Combine all layers into a feature group
-                propertyName: 'job_number',  // Property to search on
+                layer: L.featureGroup([completedJobsLayer, ...Object.values(yearLayers)]),
+                propertyName: 'job_number',
                 marker: false,
                 initial: false,
                 zoom: 10,
                 moveToLocation: function (latlng, title, map) {
-                    map.setView(latlng, this._zoom);  // Zoom to marker location
+                    map.setView(latlng, this._zoom);
                 },
                 textPlaceholder: "Search for Job Number..."
             });
 
-
             map.addControl(searchControl);
-
-            // Add markers to search index across all layers
-            markers.forEach(({marker, properties}) => {
-                searchControl.index.addMarker(marker, properties.job_number);
-            });
         })
         .catch(error => console.error("Error loading GeoJSON data:", error));
 };
 
-// Load GeoJSON data for year layers and completed jobs
 loadGeoJsonData();
 
-// Function to load monument data
+// Function to load monument data and filter for intact monuments
 const loadMonumentData = () => {
     fetch("/static/pei_control_monuments.geojson")
         .then(response => {
@@ -154,17 +127,38 @@ const loadMonumentData = () => {
             return response.json();
         })
         .then(data => {
-            const monumentsLayer = L.layerGroup();
+            const monumentsLayer = L.layerGroup(); // Layer for monuments
+
             L.geoJSON(data, {
-                pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
-                    radius: 4,
-                    fillColor: "#00bfff",
-                    color: "#000",
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8,
-                })
+                pointToLayer: (feature, latlng) => {
+                    // Check if the monument's status is 'Intact'
+                    if (feature.properties.status && feature.properties.status.toLowerCase() === 'intact') {
+                        const {monument, status, nad83_lat, nad83_long, nad83_e, nad83_n} = feature.properties;
+
+                        // Display monument information along with geographical coordinates and NAD data
+                        const popupContent = `
+                            <strong>Monument:</strong> ${monument}<br>
+                            <strong>Status:</strong> ${status}<br>
+                            <strong>Latitude:</strong> ${latlng.lat.toFixed(6)}<br>
+                            <strong>Longitude:</strong> ${latlng.lng.toFixed(6)}<br>
+                            <strong>NAD83 Latitude:</strong> ${nad83_lat || 'N/A'}<br>
+                            <strong>NAD83 Longitude:</strong> ${nad83_long || 'N/A'}<br>
+                            <strong>NAD83 E:</strong> ${nad83_e || 'N/A'}<br>
+                            <strong>NAD83 N:</strong> ${nad83_n || 'N/A'}
+                        `;
+
+                        return L.circleMarker(latlng, {
+                            radius: 4,
+                            fillColor: "#00bfff",  // Light blue color for intact monuments
+                            color: "#000",
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        }).bindPopup(popupContent);
+                    }
+                }
             }).addTo(monumentsLayer);
+
             controlLayers.addOverlay(monumentsLayer, "Monuments");
         })
         .catch(error => console.error("Error loading monument data:", error));
@@ -172,4 +166,3 @@ const loadMonumentData = () => {
 
 // Load monument data
 loadMonumentData();
-

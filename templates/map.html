@@ -18,16 +18,30 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-search/dist/leaflet-search.min.css">
     <script src="https://unpkg.com/leaflet-search/dist/leaflet-search.min.js"></script>
 
+    <!-- Include Leaflet Fullscreen Plugin -->
+    <script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.css"/>
 
-    <style>
-        #map {
-            width: 100%;
-            height: 600px;
-        }
-    </style>
+    <!-- Link to your custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
 </head>
 <body>
+<div id="map-header">
+    <h2>Locus Surveys Job Locations</h2>
+</div>
+
 <div id="map"></div>
+
+<!-- Button to open external ArcGIS map -->
+<div id="arcgis-button">
+    <a href="https://www.arcgis.com/apps/webappviewer/index.html?id=e0d12b6f54a4487096262fd49534046a" target="_blank"
+       class="btn-external-map">
+        Open ArcGIS PID Map
+    </a>
+</div>
+
+<script src="https://unpkg.com/esri-leaflet/dist/esri-leaflet.js"></script>
 
 <!-- Link to the external JavaScript file -->
 <script src="{{ url_for('static', filename='js/map.js') }}"></script>
