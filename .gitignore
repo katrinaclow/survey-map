@@ -3,5 +3,5 @@ venv/
 credentials.json
 *.pyc
 *.log
-static/job_data.geojson
+static/geojson/job_data.geojson
 

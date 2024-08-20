@@ -42,9 +42,9 @@ const generatePopupContent = (properties) => {
         <p><strong>Client:</strong> ${properties.client}</p>
         <p><strong>Address:</strong> ${properties.address}</p>
         <p><strong>PID:</strong> ${properties.pid}</p>
-        <p><strong>Fieldwork Completed:</strong> ${properties.initial_fieldwork_completed || "N/A"}</p>
-        <p><strong>Survey Markers Set:</strong> ${properties.survey_markers_set || "N/A"}</p>
-        <p><strong>Final Plan Submitted:</strong> ${properties.final_plan_submitted || "N/A"}</p>
+        <p><strong>Fieldwork Completed:</strong> ${properties.initial_fieldwork_completed || " "}</p>
+        <p><strong>Survey Markers Set:</strong> ${properties.survey_markers_set || " "}</p>
+        <p><strong>Final Plan Submitted:</strong> ${properties.final_plan_submitted || " "}</p>
         <p><strong>Date Created:</strong> ${properties.date_created}</p>
     `;
 };
@@ -55,42 +55,58 @@ const isJobCompleted = (status) => {
 };
 
 // Function to add a marker to the corresponding year layer or completed jobs layer
+// Function to add a marker to the corresponding year layer or completed jobs layer
 const addMarkerToLayer = (feature, latlng) => {
     let marker;
 
+    // Determine the marker color based on the status
+    let color = "#ff0000";  // Default to red (project created)
+
     if (isJobCompleted(feature.properties.final_plan_submitted)) {
-        marker = L.marker(latlng, {icon: completedIcon}).bindPopup(generatePopupContent(feature.properties));
-        completedJobsLayer.addLayer(marker);
-    } else {
-        marker = L.circleMarker(latlng, {
-            radius: 8,
-            fillColor: "#ff0000",
-            color: "#000",
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.8
-        }).bindPopup(generatePopupContent(feature.properties));
-
-        const jobYear = new Date(feature.properties.date_created).getFullYear();
-
-        if (!yearLayers[jobYear]) {
-            yearLayers[jobYear] = L.markerClusterGroup({
-                maxClusterRadius: 40,
-                disableClusteringAtZoom: 40
-            });
-            controlLayers.addOverlay(yearLayers[jobYear], ` ${jobYear}`);
-        }
-
-        yearLayers[jobYear].addLayer(marker);
+        color = "#008000";  // Green (final plan submitted)
+    } else if (isJobCompleted(feature.properties.survey_markers_set)) {
+        color = "#ffd700";  // Yellow (survey markers set)
+    } else if (isJobCompleted(feature.properties.initial_fieldwork_completed)) {
+        color = "#ffa500";  // Orange (fieldwork completed)
     }
 
-    markers.push({marker, properties: feature.properties});
+    marker = L.circleMarker(latlng, {
+        radius: 10,
+        fillColor: color,
+        color: "#000000",  // Keep the border color black
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.8
+    }).bindPopup(generatePopupContent(feature.properties));
+
+    // If the job is completed (final plan submitted), add to the completed jobs layer
+    if (isJobCompleted(feature.properties.final_plan_submitted)) {
+        completedJobsLayer.addLayer(marker);
+    }
+
+    // Add the marker to the appropriate year layer
+    const jobYear = new Date(feature.properties.date_created).getFullYear();
+
+    if (!yearLayers[jobYear]) {
+        yearLayers[jobYear] = L.markerClusterGroup({
+            maxClusterRadius: 40,
+            disableClusteringAtZoom: 12
+        });
+        controlLayers.addOverlay(yearLayers[jobYear], ` ${jobYear}`);
+    }
+
+    yearLayers[jobYear].addLayer(marker);
+
+    // Add the marker to the search index
+    markers.push({ marker, properties: feature.properties });
+
     return marker;
 };
 
+
 // Function to load GeoJSON data
 const loadGeoJsonData = () => {
-    fetch("/static/job_data.geojson")
+    fetch("/static/geojson/job_data.geojson")
         .then(response => response.json())
         .then(data => {
             L.geoJSON(data, {
@@ -117,9 +133,10 @@ const loadGeoJsonData = () => {
 
 loadGeoJsonData();
 
+
 // Function to load monument data and filter for intact monuments
 const loadMonumentData = () => {
-    fetch("/static/pei_control_monuments.geojson")
+    fetch("/static/geojson/pei_control_monuments.geojson")
         .then(response => {
             if (!response.ok) {
                 throw new Error(`Failed to fetch monuments GeoJSON: ${response.status} ${response.statusText}`);
@@ -166,3 +183,27 @@ const loadMonumentData = () => {
 
 // Load monument data
 loadMonumentData();
+
+function createLegend() {
+    const legend = L.control({ position: 'bottomright' });
+
+    legend.onAdd = function () {
+        const div = L.DomUtil.create('div', 'info legend');
+        div.innerHTML += '<h4>Job Status</h4>';
+        div.innerHTML += '<div class="legend-item"><span class="legend-circle legend-red"></span>Project Created</div>';
+        div.innerHTML += '<div class="legend-item"><span class="legend-circle legend-orange"></span>Fieldwork Completed</div>';
+        div.innerHTML += '<div class="legend-item"><span class="legend-circle legend-yellow"></span>Survey Markers Set</div>';
+        div.innerHTML += '<div class="legend-item"><span class="legend-circle legend-green"></span>Final Plan Submitted</div>';
+        return div;
+    };
+
+    legend.addTo(map);
+}
+
+createLegend();
+
+
+// Add a scale bar to the map
+L.control.scale({ position: 'bottomleft' }).addTo(map);
+
+

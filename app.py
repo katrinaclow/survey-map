@@ -53,7 +53,7 @@ def update_geojson():
                 except ValueError:
                     continue
 
-    with open('static/job_data.geojson', 'w') as geojson_file:
+    with open('static/geojson/job_data.geojson', 'w') as geojson_file:
         json.dump(geojson, geojson_file, indent=4)
 
 @app.route('/')
