@@ -29,9 +29,58 @@ body {
 }
 
 /* Job Information Sidebar */
+/* Job Info Sidebar Default Styles */
 #job-info-sidebar {
+    position: fixed;
+    right: -300px; /* Hide the sidebar offscreen */
+    top: 0;
+    height: 100vh;
+    width: 300px;
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-left: 2px solid #ddd;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+    font-family: 'Lato', sans-serif;
+    z-index: 1000;
+    transition: right 0.3s ease; /* Slide in/out animation */
     overflow-y: auto;
 }
+
+/* Sidebar visible state */
+#job-info-sidebar.visible {
+    right: 0;
+}
+
+#job-info-sidebar h3 {
+    text-align: center;
+}
+
+#job-details {
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+/* Backdrop for clicking outside the sidebar */
+#sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+#sidebar-backdrop.visible {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    #job-info-sidebar {
+        width: 80%;
+    }
+}
+
 
 #job-details {
     margin-top: 20px;

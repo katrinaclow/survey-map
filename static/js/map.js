@@ -45,6 +45,8 @@ const generatePopupContent = (properties) => {
 let selectedJobDetails = {};
 
 const showDetails = () => {
+    const sidebar = document.getElementById('job-info-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
     const detailsContainer = document.getElementById('job-details');
     detailsContainer.innerHTML = `
         <h3>Job Details</h3>
@@ -75,7 +77,24 @@ const showDetails = () => {
         <p><strong>Method:</strong> ${selectedJobDetails.method}</p>
         <p><strong>Employee:</strong> ${selectedJobDetails.employee}</p>
     `;
+    // Show the sidebar and the backdrop
+    sidebar.classList.add('visible');
+    backdrop.classList.add('visible');
 };
+
+// Function to hide the sidebar
+const hideSidebar = () => {
+    const sidebar = document.getElementById('job-info-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+
+    // Hide the sidebar and the backdrop
+    sidebar.classList.remove('visible');
+    backdrop.classList.remove('visible');
+};
+
+// Attach the click event to the backdrop to close the sidebar when clicked outside
+document.getElementById('sidebar-backdrop').addEventListener('click', hideSidebar);
+
 
 // Function to check completion status
 const isJobCompleted = (status) => {
