@@ -49,7 +49,6 @@ const showDetails = () => {
     const backdrop = document.getElementById('sidebar-backdrop');
     const detailsContainer = document.getElementById('job-details');
     detailsContainer.innerHTML = `
-        <h3>Job Details</h3>
         <p><strong>Job Number:</strong> ${selectedJobDetails.job_number}</p>
         <p><strong>Client:</strong> ${selectedJobDetails.client}</p>
         <p><strong>Location:</strong> ${selectedJobDetails.location}</p>

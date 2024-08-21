@@ -29,15 +29,15 @@ body {
 }
 
 /* Job Information Sidebar */
-/* Job Info Sidebar Default Styles */
+/* Sidebar Default Styles */
 #job-info-sidebar {
     position: fixed;
-    right: -300px; /* Hide the sidebar offscreen */
+    right: -350px; /* Hidden off-screen */
     top: 0;
     height: 100vh;
-    width: 300px;
-    background-color: #f9f9f9;
-    padding: 15px;
+    width: 350px;
+    background-color: #ffffff;
+    padding: 20px;
     border-left: 2px solid #ddd;
     box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
     font-family: 'Lato', sans-serif;
@@ -46,18 +46,47 @@ body {
     overflow-y: auto;
 }
 
-/* Sidebar visible state */
+/* Sidebar Visible State */
 #job-info-sidebar.visible {
     right: 0;
 }
 
+/* Sidebar Title Styling */
 #job-info-sidebar h3 {
     text-align: center;
+    font-size: 24px;
+    color: #333; /* Darker for contrast */
+    margin-bottom: 20px;
 }
 
+/* Sidebar Job Details Content */
 #job-details {
-    margin-top: 20px;
     font-size: 14px;
+    color: #555; /* Softer text color */
+}
+
+#job-details p {
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+/* Scrollbar Styling */
+#job-info-sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+#job-info-sidebar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+#job-info-sidebar::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 10px;
+}
+
+#job-info-sidebar::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 /* Backdrop for clicking outside the sidebar */
@@ -71,41 +100,17 @@ body {
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 999;
 }
+
 #sidebar-backdrop.visible {
     display: block;
 }
 
+/* Responsive Sidebar Styling */
 @media (max-width: 768px) {
     #job-info-sidebar {
         width: 80%;
     }
-}
 
-
-#job-details {
-    margin-top: 20px;
-    font-size: 14px;
-}
-
-#job-details h3 {
-    margin-bottom: 10px;
-}
-
-.details-btn {
-    background-color: #007bff;
-    color: white;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.details-btn:hover {
-    background-color: #0056b3;
-}
-
-
-@media (max-width: 768px) {
     #map-container {
         flex-direction: column;
         align-items: center;
@@ -115,13 +120,32 @@ body {
         width: 100%;
         height: 400px;
     }
-
-    #job-info-sidebar {
-        width: 100%;
-        margin-top: 20px;
-    }
 }
 
+/* Styling for Additional Details Button */
+.details-btn {
+    background-color: #4CAF50; /* Green background */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    display: block;
+    margin: 10px auto;
+}
+
+.details-btn:hover {
+    background-color: #45a049; /* Darker green on hover */
+    transform: translateY(-2px); /* Slight lift on hover */
+}
+
+.details-btn:active {
+    background-color: #3e8e41; /* Even darker green on click */
+    transform: translateY(0); /* Reset lift on click */
+}
 
 /* Popup Styling */
 .leaflet-popup-content {
@@ -240,8 +264,7 @@ body {
     background-color: #008000; /* Green for Final Plan Submitted */
 }
 
-
-/* Style for the external ArcGIS map button */
+/* External ArcGIS map button */
 #arcgis-button {
     margin-top: 20px;
     margin-bottom: 40px;
