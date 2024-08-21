@@ -23,17 +23,6 @@ const yearLayers = {};
 const completedJobsLayer = L.layerGroup();
 const markers = [];
 
-// Define custom completed icon
-const createCompletedIcon = () => {
-    return L.icon({
-        iconUrl: "https://clipart-library.com/images_k/red-check-mark-transparent-background/red-check-mark-transparent-background-22.png",
-        iconSize: [20, 16],
-        iconAnchor: [8, 8],
-        popupAnchor: [0, -8]
-    });
-};
-
-const completedIcon = createCompletedIcon();
 
 // Function to generate popup content for a job marker
 const generatePopupContent = (properties) => {
@@ -46,6 +35,7 @@ const generatePopupContent = (properties) => {
         <p><strong>Survey Markers Set:</strong> ${properties.survey_markers_set || " "}</p>
         <p><strong>Final Plan Submitted:</strong> ${properties.final_plan_submitted || " "}</p>
         <p><strong>Date Created:</strong> ${properties.date_created}</p>
+        <button class="details-btn" onclick="showDetails(${JSON.stringify(properties)})">Additional Details</button>
     `;
 };
 
@@ -54,7 +44,6 @@ const isJobCompleted = (status) => {
     return ["yes", "y", "na"].includes((status || "").toLowerCase());
 };
 
-// Function to add a marker to the corresponding year layer or completed jobs layer
 // Function to add a marker to the corresponding year layer or completed jobs layer
 const addMarkerToLayer = (feature, latlng) => {
     let marker;
