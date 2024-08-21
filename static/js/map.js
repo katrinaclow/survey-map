@@ -35,7 +35,45 @@ const generatePopupContent = (properties) => {
         <p><strong>Survey Markers Set:</strong> ${properties.survey_markers_set || " "}</p>
         <p><strong>Final Plan Submitted:</strong> ${properties.final_plan_submitted || " "}</p>
         <p><strong>Date Created:</strong> ${properties.date_created}</p>
-        <button class="details-btn" onclick="showDetails(${JSON.stringify(properties)})">Additional Details</button>
+        <button class="details-btn" onclick='selectedJobDetails = ${JSON.stringify(properties)}; showDetails();'>Additional Details</button>
+
+    `;
+};
+
+
+// Global variable to store job details
+let selectedJobDetails = {};
+
+const showDetails = () => {
+    const detailsContainer = document.getElementById('job-details');
+    detailsContainer.innerHTML = `
+        <h3>Job Details</h3>
+        <p><strong>Job Number:</strong> ${selectedJobDetails.job_number}</p>
+        <p><strong>Client:</strong> ${selectedJobDetails.client}</p>
+        <p><strong>Location:</strong> ${selectedJobDetails.location}</p>
+        <p><strong>Road:</strong> ${selectedJobDetails.road}</p>
+        <p><strong>Civic:</strong> ${selectedJobDetails.civic}</p>
+        <p><strong>Address:</strong> ${selectedJobDetails.address}</p>
+        <p><strong>PID:</strong> ${selectedJobDetails.pid}</p>
+        <p><strong>Latitude:</strong> ${selectedJobDetails.latitude}</p>
+        <p><strong>Longitude:</strong> ${selectedJobDetails.longitude}</p>
+        <p><strong>Date Created:</strong> ${selectedJobDetails.date_created}</p>
+        <p><strong>Worksheet Created:</strong> ${selectedJobDetails.worksheet_created}</p>
+        <p><strong>Preliminary Required:</strong> ${selectedJobDetails.preliminary_required}</p>
+        <p><strong>Application Submitted:</strong> ${selectedJobDetails.application_submitted}</p>
+        <p><strong>Preliminary Plan Completed:</strong> ${selectedJobDetails.preliminary_plan_completed}</p>
+        <p><strong>Preliminary Submitted:</strong> ${selectedJobDetails.preliminary_submitted}</p>
+        <p><strong>Preliminary Approved:</strong> ${selectedJobDetails.preliminary_approved}</p>
+        <p><strong>Initial Fieldwork Completed:</strong> ${selectedJobDetails.initial_fieldwork_completed}</p>
+        <p><strong>Plan Ready for Check:</strong> ${selectedJobDetails.plan_ready_for_check}</p>
+        <p><strong>Survey Markers Set:</strong> ${selectedJobDetails.survey_markers_set}</p>
+        <p><strong>Plan to be Registered:</strong> ${selectedJobDetails.plan_to_be_registered}</p>
+        <p><strong>Plan Registered:</strong> ${selectedJobDetails.plan_registered}</p>
+        <p><strong>Final Plan Submitted:</strong> ${selectedJobDetails.final_plan_submitted}</p>
+        <p><strong>Invoiced:</strong> ${selectedJobDetails.invoiced}</p>
+        <p><strong>Paid:</strong> ${selectedJobDetails.paid}</p>
+        <p><strong>Method:</strong> ${selectedJobDetails.method}</p>
+        <p><strong>Employee:</strong> ${selectedJobDetails.employee}</p>
     `;
 };
 
@@ -87,7 +125,7 @@ const addMarkerToLayer = (feature, latlng) => {
     yearLayers[jobYear].addLayer(marker);
 
     // Add the marker to the search index
-    markers.push({ marker, properties: feature.properties });
+    markers.push({marker, properties: feature.properties});
 
     return marker;
 };
@@ -174,7 +212,7 @@ const loadMonumentData = () => {
 loadMonumentData();
 
 function createLegend() {
-    const legend = L.control({ position: 'bottomright' });
+    const legend = L.control({position: 'bottomright'});
 
     legend.onAdd = function () {
         const div = L.DomUtil.create('div', 'info legend');
@@ -193,6 +231,6 @@ createLegend();
 
 
 // Add a scale bar to the map
-L.control.scale({ position: 'bottomleft' }).addTo(map);
+L.control.scale({position: 'bottomleft'}).addTo(map);
 
 
