@@ -27,18 +27,18 @@
 
 </head>
 <body>
-<div id="map-header">
-    <h2>Locus Surveys Job Locations</h2>
-</div>
 
-<div id="map"></div>
+<div id="map-container">
 
-<!-- Button to open external ArcGIS map -->
-<div id="arcgis-button">
-    <a href="https://www.arcgis.com/apps/webappviewer/index.html?id=e0d12b6f54a4487096262fd49534046a" target="_blank"
-       class="btn-external-map">
-        Open ArcGIS PID Map
-    </a>
+    <div id="map"></div>
+
+    <div id="job-info-sidebar">
+        <h3>Job Details</h3>
+        <div id="job-details">
+            <!-- Job details will be loaded here dynamically -->
+            <p>Select a job marker to see details.</p>
+        </div>
+    </div>
 </div>
 
 <script src="https://unpkg.com/esri-leaflet/dist/esri-leaflet.js"></script>

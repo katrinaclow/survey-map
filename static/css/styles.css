@@ -10,41 +10,59 @@ body {
     min-height: 100vh;
 }
 
-/* Map Header */
-#map-header {
-    text-align: center;
-    margin-top: 20px;
-    font-family: 'Lato', sans-serif;
-    font-size: 32px;
-    color: #333;
-}
-
 /* Map Container */
 #map-container {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px auto;
     width: 90%;
-    max-width: 1200px;
-    margin: 20px 0;
-    padding: 20px;
-    background-color: #f8f9fa;  /* Light grey background */
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 #map {
-    width: 90%;
+    width: 70%;
     height: 600px;
     border-radius: 15px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     border: 2px solid #ddd;
-    transition: all 0.3s ease;
+    padding: 10px;
     background: linear-gradient(to right, #f5f7fa, #c3cfe2);
 }
 
+#job-info-sidebar {
+    width: 25%;
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    font-family: 'Lato', sans-serif;
+}
+
+#job-info-sidebar h3 {
+    text-align: center;
+}
+
+#job-details {
+    margin-top: 20px;
+    font-size: 14px;
+}
+
 @media (max-width: 768px) {
+    #map-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
     #map {
+        width: 100%;
         height: 400px;
     }
+
+    #job-info-sidebar {
+        width: 100%;
+        margin-top: 20px;
+    }
 }
+
 
 /* Popup Styling */
 .leaflet-popup-content {
