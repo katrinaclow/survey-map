@@ -37,19 +37,43 @@ def update_geojson():
                     longitude = float(longitude)
                     feature = {
                         "type": "Feature",
-                        "geometry": {"type": "Point", "coordinates": [longitude, latitude]},
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [longitude, latitude]  # GeoJSON uses [longitude, latitude]
+                        },
                         "properties": {
                             "job_number": record.get('Job Number', ''),
                             "client": record.get('Client', ''),
+                            "location": record.get('Location', ''),
+                            "road": record.get('Road', ''),
+                            "civic": record.get('Civic', ''),
                             "address": f"{record.get('Civic', '')} {record.get('Road', '')}, {record.get('Location', '')}",
                             "pid": record.get('PID', ''),
+                            "latitude": latitude,
+                            "longitude": longitude,
                             "date_created": date_created,
+                            "worksheet_created": record.get('Worksheet Created', ''),
+                            "preliminary_required": record.get('Preliminary Required', ''),
+                            "application_submitted": record.get('Application Submitted', ''),
+                            "preliminary_plan_completed": record.get('Preliminary Plan Completed', ''),
+                            "preliminary_submitted": record.get('Preliminary Submitted', ''),
+                            "preliminary_approved": record.get('Preliminary Approved', ''),
                             "initial_fieldwork_completed": record.get('Initial Fieldwork Completed', ''),
+                            "plan_ready_for_check": record.get('Plan Ready for Check', ''),
                             "survey_markers_set": record.get('Survey Markers Set', ''),
-                            "final_plan_submitted": record.get('Final Plan Submitted', '')
+                            "plan_to_be_registered": record.get('Plan to be Registered', ''),
+                            "plan_registered": record.get('Plan Registered', ''),
+                            "final_plan_submitted": record.get('Final Plan Submitted', ''),
+                            "invoiced": record.get('Invoiced', ''),
+                            "paid": record.get('Paid', ''),
+                            "method": record.get('Method', ''),
+                            "employee": record.get('Employee', '')
                         }
                     }
+
+                    # Append the feature to the GeoJSON feature collection
                     geojson["features"].append(feature)
+
                 except ValueError:
                     continue
 
