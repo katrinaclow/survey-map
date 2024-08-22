@@ -7,9 +7,9 @@ const map = initializeMap();
 
 // Add ArcGIS Basemap instead of OpenStreetMap
 const baseLayers = {
-    "ArcGIS Topographic": L.esri.basemapLayer("Topographic").addTo(map), // ArcGIS Topographic Basemap
-    "ArcGIS Satellite": L.esri.basemapLayer("Imagery"), // ArcGIS Satellite Basemap
-    "ArcGIS Streets": L.esri.basemapLayer("Streets") // ArcGIS Streets Basemap
+    "Topographic": L.esri.basemapLayer("Topographic").addTo(map), // ArcGIS Topographic Basemap
+    "Satellite": L.esri.basemapLayer("Imagery"), // ArcGIS Satellite Basemap
+    "Streets": L.esri.basemapLayer("Streets"), // ArcGIS Streets Basemap
 };
 
 
