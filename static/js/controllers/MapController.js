@@ -47,12 +47,9 @@ export class MapController {
 				keepCurrentZoomLevel: true,
 			})
 			.addTo(this.map);
-<<<<<<< HEAD
 
 		// Initialize filters
 		this._initializeFilters();
-=======
->>>>>>> 501e49df16d8bb55bf52b07c5d97004a09c5ff67
 	}
 
 	async loadJobData() {
@@ -66,12 +63,9 @@ export class MapController {
 			// Create heatmap after loading data
 			this._createHeatmap();
 
-<<<<<<< HEAD
 			// Populate filter dropdowns
 			this._populateFilters();
 
-=======
->>>>>>> 501e49df16d8bb55bf52b07c5d97004a09c5ff67
 			const searchControl = new L.Control.Search({
 				layer: L.featureGroup([
 					this.completedLayer,
