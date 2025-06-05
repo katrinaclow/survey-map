@@ -93,6 +93,19 @@ def update_geojson():
         json.dump(fc, f, indent=4)
 
 
+@app.route('/static/geojson/<filename>')
+def serve_geojson(filename):
+    """Serve GeoJSON files with caching headers."""
+    try:
+        return send_from_directory(
+            GEOJSON_DIR, 
+            filename, 
+            conditional=True,
+            as_attachment=False
+        )
+    except FileNotFoundError:
+        return jsonify({'error': 'File not found'}), 404
+
 @app.route('/')
 def index():
     return render_template('map.html')

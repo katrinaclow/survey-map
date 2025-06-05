@@ -23,6 +23,13 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.css" />
   <script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
 
+  <!-- Include Leaflet Locate Control -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
+  <script src="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
+
+  <!-- Include Leaflet Heat -->
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
   <!-- Custom styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
 </head>
@@ -30,6 +37,21 @@
 <body>
   <div id="map-container">
     <div id="map"></div>
+
+    <!-- Add filter controls -->
+    <div id="filter-controls">
+      <label for="client-filter">Filter by Client:</label>
+      <select id="client-filter">
+        <option value="">All Clients</option>
+      </select>
+
+      <label for="employee-filter">Filter by Employee:</label>
+      <select id="employee-filter">
+        <option value="">All Employees</option>
+      </select>
+
+      <button id="clear-filters">Clear Filters</button>
+    </div>
 
     <div id="job-info-sidebar">
       <h3>Job Details</h3>

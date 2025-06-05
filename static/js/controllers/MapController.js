@@ -19,6 +19,7 @@ export class MapController {
 		// containers
 		this.yearLayers = {};
 		this.completedLayer = L.layerGroup();
+		this.heatLayer = null; // Add heatmap layer
 		this.markers = [];
 
 		// services & UI
@@ -32,6 +33,23 @@ export class MapController {
 		this.createLegend();
 		L.control.scale({position: "bottomleft"}).addTo(this.map);
 		new Legend().addTo(this.map);
+
+		// Add fullscreen control
+		L.control.fullscreen({position: "topleft"}).addTo(this.map);
+
+		// Add geolocation control
+		L.control
+			.locate({
+				position: "topleft",
+				drawCircle: true,
+				follow: true,
+				setView: true,
+				keepCurrentZoomLevel: true,
+			})
+			.addTo(this.map);
+
+		// Initialize filters
+		this._initializeFilters();
 	}
 
 	async loadJobData() {
@@ -41,6 +59,12 @@ export class MapController {
 				pointToLayer: (feat, latlng) => this._addJobMarker(feat, latlng),
 			});
 			this.controlLayers.addOverlay(this.completedLayer, "Completed Jobs");
+
+			// Create heatmap after loading data
+			this._createHeatmap();
+
+			// Populate filter dropdowns
+			this._populateFilters();
 
 			const searchControl = new L.Control.Search({
 				layer: L.featureGroup([
@@ -58,6 +82,20 @@ export class MapController {
 		} catch (err) {
 			console.error("Error loading job data:", err);
 		}
+	}
+
+	_createHeatmap() {
+		const heatPoints = this.markers.map((m) => [
+			m.props.latitude,
+			m.props.longitude,
+			0.5,
+		]);
+		this.heatLayer = L.heatLayer(heatPoints, {
+			radius: 25,
+			blur: 15,
+			maxZoom: 17,
+		});
+		this.controlLayers.addOverlay(this.heatLayer, "Job Density");
 	}
 
 	_addJobMarker(feature, latlng) {
@@ -120,5 +158,74 @@ export class MapController {
 			return div;
 		};
 		legend.addTo(this.map);
+	}
+
+	_initializeFilters() {
+		const clientFilter = document.getElementById("client-filter");
+		const employeeFilter = document.getElementById("employee-filter");
+		const clearFiltersBtn = document.getElementById("clear-filters");
+
+		clientFilter.addEventListener("change", () => this._applyFilters());
+		employeeFilter.addEventListener("change", () => this._applyFilters());
+		clearFiltersBtn.addEventListener("click", () => this._clearFilters());
+	}
+
+	_populateFilters() {
+		const clients = [
+			...new Set(this.markers.map((m) => m.props.client).filter(Boolean)),
+		].sort();
+		const employees = [
+			...new Set(this.markers.map((m) => m.props.employee).filter(Boolean)),
+		].sort();
+
+		const clientFilter = document.getElementById("client-filter");
+		const employeeFilter = document.getElementById("employee-filter");
+
+		clients.forEach((client) => {
+			const option = document.createElement("option");
+			option.value = client;
+			option.textContent = client;
+			clientFilter.appendChild(option);
+		});
+
+		employees.forEach((employee) => {
+			const option = document.createElement("option");
+			option.value = employee;
+			option.textContent = employee;
+			employeeFilter.appendChild(option);
+		});
+	}
+
+	_applyFilters() {
+		const selectedClient = document.getElementById("client-filter").value;
+		const selectedEmployee = document.getElementById("employee-filter").value;
+
+		// Clear all layers
+		this.completedLayer.clearLayers();
+		Object.values(this.yearLayers).forEach((layer) => layer.clearLayers());
+
+		// Re-add filtered markers
+		this.markers.forEach(({marker, props}) => {
+			const matchesClient = !selectedClient || props.client === selectedClient;
+			const matchesEmployee =
+				!selectedEmployee || props.employee === selectedEmployee;
+
+			if (matchesClient && matchesEmployee) {
+				if (MarkerFactory.isJobCompleted(props.final_plan_submitted)) {
+					this.completedLayer.addLayer(marker);
+				}
+
+				const year = new Date(props.date_created).getFullYear();
+				if (this.yearLayers[year]) {
+					this.yearLayers[year].addLayer(marker);
+				}
+			}
+		});
+	}
+
+	_clearFilters() {
+		document.getElementById("client-filter").value = "";
+		document.getElementById("employee-filter").value = "";
+		this._applyFilters();
 	}
 }
