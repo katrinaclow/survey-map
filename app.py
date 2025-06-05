@@ -1,6 +1,6 @@
 import os
 import json
-from flask import Flask, render_template, jsonify, make_response
+from flask import Flask, render_template, jsonify, make_response, send_from_directory
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import logging
@@ -92,21 +92,11 @@ def update_geojson():
     with open(JOB_GEOJSON_PATH, 'w') as f:
         json.dump(fc, f, indent=4)
 
-@app.before_first_request
-def initialize_data():
-    update_geojson()
 
 @app.route('/')
 def index():
     return render_template('map.html')
 
-@app.route('/api/jobs.geojson')
-def jobs_geojson():
-    """Serve the latest GeoJSON with caching headers."""
-    fc = build_feature_collection()
-    resp = make_response(jsonify(fc))
-    resp.headers['Cache-Control'] = 'public, max-age=300'
-    return resp
 
 if __name__ == '__main__':
     # Ensure data is generated before the first run

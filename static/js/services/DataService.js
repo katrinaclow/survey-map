@@ -1,11 +1,11 @@
 export class DataService {
-  constructor(baseUrl = '/api') {
+  constructor(baseUrl = '/static/geojson') {
     this.baseUrl = baseUrl;
   }
 
   async fetchJobs() {
-    const res = await fetch(`${this.baseUrl}/jobs.geojson`);
-    if (!res.ok) throw new Error(`Failed to fetch job data: ${res.status}`);
+    const res = await fetch(`${this.baseUrl}/job_data.geojson`);
+    if (!res.ok) throw new Error(res.statusText);
     return res.json();
   }
 
