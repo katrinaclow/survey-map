@@ -1,88 +1,114 @@
-from flask import Flask, render_template
+import os
+import json
+from flask import Flask, render_template, jsonify, make_response
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import json
+import logging
 
 app = Flask(__name__)
 
-data_updated = False
+# Configuration
+GOOGLE_CRED_FILE = os.getenv('GOOGLE_CRED_JSON', 'credentials.json')
+GOOGLE_SHEET_NAME = os.getenv('GOOGLE_SHEET_NAME', 'Locus Surveys Jobs')
+GEOJSON_DIR = os.path.join(app.root_path, 'static', 'geojson')
+JOB_GEOJSON_PATH = os.path.join(GEOJSON_DIR, 'job_data.geojson')
+SCOPE = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
 
-@app.before_request
-def update_geojson_once():
-    global data_updated
-    if not data_updated:
-        update_geojson()
-        data_updated = True
+JOB_FIELDS = [
+  ("job_number",       "Job Number"),
+  ("client",           "Client"),
+  ("location",         "Location"),
+  ("road",             "Road"),
+  ("civic",            "Civic"),
+  ("address",          "Address"),
+  ("pid",              "PID"),
+  ("latitude",         "Latitude"),
+  ("longitude",        "Longitude"),
+  ("date_created",     "Date Created"),
+  ("worksheet_created", "Worksheet Created"),
+  ("preliminary_required", "Preliminary Required"),
+  ("application_submitted", "Application Submitted"),
+  ("preliminary_plan_completed", "Preliminary Plan Completed"),
+  ("preliminary_submitted", "Preliminary Submitted"),
+  ("preliminary_approved", "Preliminary Approved"),
+  ("initial_fieldwork_completed", "Initial Fieldwork Completed"),
+  ("plan_ready_for_check", "Plan Ready for Check"),
+  ("survey_markers_set", "Survey Markers Set"),
+  ("plan_to_be_registered", "Plan to be Registered"),
+  ("plan_registered", "Plan Registered"),
+  ("final_plan_submitted", "Final Plan Submitted"),
+  ("invoiced",         "Invoiced"),
+  ("paid",             "Paid"),
+  ("method",           "Method"),
+  ("employee",         "Employee"),
+]
 
-def update_geojson():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    credentials = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-    client = gspread.authorize(credentials)
+logger = logging.getLogger(__name__)
 
-    spreadsheet = client.open("Locus Surveys Jobs")
-    geojson = {"type": "FeatureCollection", "features": []}
+def build_feature_collection():
+    """Fetch all worksheets and build a GeoJSON FeatureCollection."""
+    creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_CRED_FILE, SCOPE)
+    client = gspread.authorize(creds)
+    sheet = client.open(GOOGLE_SHEET_NAME)
 
-    worksheets = spreadsheet.worksheets()
-    for worksheet in worksheets:
-        records = worksheet.get_all_records()
-
-        for record in records:
-            latitude = record.get('Latitude')
-            longitude = record.get('Longitude')
-            date_created = record.get('Date Created')
-
-            if latitude and longitude and date_created:
+    features = []
+    try:
+        for ws in sheet.worksheets():
+            for record in ws.get_all_records():
                 try:
-                    latitude = float(latitude)
-                    longitude = float(longitude)
-                    feature = {
-                        "type": "Feature",
-                        "geometry": {
-                            "type": "Point",
-                            "coordinates": [longitude, latitude]  # GeoJSON uses [longitude, latitude]
-                        },
-                        "properties": {
-                            "job_number": record.get('Job Number', ''),
-                            "client": record.get('Client', ''),
-                            "location": record.get('Location', ''),
-                            "road": record.get('Road', ''),
-                            "civic": record.get('Civic', ''),
-                            "address": f"{record.get('Civic', '')} {record.get('Road', '')}, {record.get('Location', '')}",
-                            "pid": record.get('PID', ''),
-                            "latitude": latitude,
-                            "longitude": longitude,
-                            "date_created": date_created,
-                            "worksheet_created": record.get('Worksheet Created', ''),
-                            "preliminary_required": record.get('Preliminary Required', ''),
-                            "application_submitted": record.get('Application Submitted', ''),
-                            "preliminary_plan_completed": record.get('Preliminary Plan Completed', ''),
-                            "preliminary_submitted": record.get('Preliminary Submitted', ''),
-                            "preliminary_approved": record.get('Preliminary Approved', ''),
-                            "initial_fieldwork_completed": record.get('Initial Fieldwork Completed', ''),
-                            "plan_ready_for_check": record.get('Plan Ready for Check', ''),
-                            "survey_markers_set": record.get('Survey Markers Set', ''),
-                            "plan_to_be_registered": record.get('Plan to be Registered', ''),
-                            "plan_registered": record.get('Plan Registered', ''),
-                            "final_plan_submitted": record.get('Final Plan Submitted', ''),
-                            "invoiced": record.get('Invoiced', ''),
-                            "paid": record.get('Paid', ''),
-                            "method": record.get('Method', ''),
-                            "employee": record.get('Employee', '')
-                        }
-                    }
-
-                    # Append the feature to the GeoJSON feature collection
-                    geojson["features"].append(feature)
-
+                    lat = float(record.get('Latitude', 0))
+                    lon = float(record.get('Longitude', 0))
                 except ValueError:
                     continue
+                date_created = record.get('Date Created')
+                if not date_created:
+                    continue
 
-    with open('static/geojson/job_data.geojson', 'w') as geojson_file:
-        json.dump(geojson, geojson_file, indent=4)
+                props = { out: record.get(inp, '') for out, inp in JOB_FIELDS }
+                props.update({
+                    "latitude":       lat,
+                    "longitude":      lon,
+                    "date_created":   date_created,
+                    "address":        f"{props['civic']} {props['road']}, {props['location']}"
+                })
+
+                features.append({
+                    "type":       "Feature",
+                    "geometry":   {"type": "Point", "coordinates": [lon, lat]},
+                    "properties": props
+                })
+    except Exception as e:
+        logger.error("Failed to read %s: %s", ws.title, e)
+
+    return {"type": "FeatureCollection", "features": features}
+
+def update_geojson():
+    """Write the jobs GeoJSON to disk once at startup."""
+    fc = build_feature_collection()
+    os.makedirs(GEOJSON_DIR, exist_ok=True)
+    with open(JOB_GEOJSON_PATH, 'w') as f:
+        json.dump(fc, f, indent=4)
+
+@app.before_first_request
+def initialize_data():
+    update_geojson()
 
 @app.route('/')
 def index():
     return render_template('map.html')
 
+@app.route('/api/jobs.geojson')
+def jobs_geojson():
+    """Serve the latest GeoJSON with caching headers."""
+    fc = build_feature_collection()
+    resp = make_response(jsonify(fc))
+    resp.headers['Cache-Control'] = 'public, max-age=300'
+    return resp
+
 if __name__ == '__main__':
+    # Ensure data is generated before the first run
+    update_geojson()
     app.run(debug=True)

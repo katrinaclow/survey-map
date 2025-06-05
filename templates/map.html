@@ -1,51 +1,52 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Job Map</title>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Load Leaflet CSS and JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <!-- Load Leaflet CSS and JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 
-    <!-- Load Leaflet.markercluster CSS and JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"/>
-    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+  <!-- Load Leaflet.markercluster CSS and JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
-    <!-- Include Leaflet Search Plugin -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-search/dist/leaflet-search.min.css">
-    <script src="https://unpkg.com/leaflet-search/dist/leaflet-search.min.js"></script>
+  <!-- Include Leaflet Search Plugin -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-search/dist/leaflet-search.min.css" />
+  <script src="https://unpkg.com/leaflet-search/dist/leaflet-search.min.js"></script>
 
-    <!-- Include Leaflet Fullscreen Plugin -->
-    <script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.css"/>
+  <!-- Include Leaflet Fullscreen Plugin -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.css" />
+  <script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
 
-    <!-- Link to your custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
 </head>
-<body>
 
-<div id="map-container">
+<body>
+  <div id="map-container">
     <div id="map"></div>
 
     <div id="job-info-sidebar">
-        <h3>Job Details</h3>
-        <div id="job-details">
-            <p>Select a job marker to see details.</p>
-        </div>
+      <h3>Job Details</h3>
+      <div id="job-details">
+        <p>Select a job marker to see details.</p>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- Backdrop for clicking outside sidebar -->
-<div id="sidebar-backdrop"></div>
+  <!-- Backdrop for clicking outside sidebar -->
+  <div id="sidebar-backdrop"></div>
 
+  <!-- ESRI Leaflet for basemap layers -->
+  <script src="https://unpkg.com/esri-leaflet/dist/esri-leaflet.js"></script>
 
-<script src="https://unpkg.com/esri-leaflet/dist/esri-leaflet.js"></script>
-
-<!-- Link to the external JavaScript file -->
-<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+  <!-- Main application module -->
+  <script type="module" src="{{ url_for('static', filename='js/index.js') }}"></script>
 </body>
+
 </html>
