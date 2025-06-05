@@ -19,6 +19,7 @@ export class MapController {
 		// containers
 		this.yearLayers = {};
 		this.completedLayer = L.layerGroup();
+		this.heatLayer = null; // Add heatmap layer
 		this.markers = [];
 
 		// services & UI
@@ -32,6 +33,20 @@ export class MapController {
 		this.createLegend();
 		L.control.scale({position: "bottomleft"}).addTo(this.map);
 		new Legend().addTo(this.map);
+
+		// Add fullscreen control
+		L.control.fullscreen({position: "topleft"}).addTo(this.map);
+
+		// Add geolocation control
+		L.control
+			.locate({
+				position: "topleft",
+				drawCircle: true,
+				follow: true,
+				setView: true,
+				keepCurrentZoomLevel: true,
+			})
+			.addTo(this.map);
 	}
 
 	async loadJobData() {
@@ -41,6 +56,9 @@ export class MapController {
 				pointToLayer: (feat, latlng) => this._addJobMarker(feat, latlng),
 			});
 			this.controlLayers.addOverlay(this.completedLayer, "Completed Jobs");
+
+			// Create heatmap after loading data
+			this._createHeatmap();
 
 			const searchControl = new L.Control.Search({
 				layer: L.featureGroup([
@@ -58,6 +76,20 @@ export class MapController {
 		} catch (err) {
 			console.error("Error loading job data:", err);
 		}
+	}
+
+	_createHeatmap() {
+		const heatPoints = this.markers.map((m) => [
+			m.props.latitude,
+			m.props.longitude,
+			0.5,
+		]);
+		this.heatLayer = L.heatLayer(heatPoints, {
+			radius: 25,
+			blur: 15,
+			maxZoom: 17,
+		});
+		this.controlLayers.addOverlay(this.heatLayer, "Job Density");
 	}
 
 	_addJobMarker(feature, latlng) {
